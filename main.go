@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bytes"
 	"errors"
 	"fmt"
 	"io"
@@ -16,6 +17,7 @@ func main() {
 
 	defer f.Close()
 
+	str := ""
 	for {
 		data := make([]byte, 8)
 		n, err := f.Read(data)
@@ -25,6 +27,21 @@ func main() {
 			}
 			log.Fatal("ERR: ", err)
 		}
-		fmt.Printf("read: %s\n", string(data[:n]))
+
+		data = data[:n]
+		if i := bytes.IndexByte(data, '\n'); i != -1 {
+			str += string(data[:i])
+			data = data[i+1:]
+
+			fmt.Printf("read: %s\n", string(str))
+
+			str = ""
+		}
+
+		str += string(data)
+	}
+
+	if len(str) != 0 {
+		fmt.Printf("read: %s\n", string(str))
 	}
 }
