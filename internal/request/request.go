@@ -56,7 +56,7 @@ func parseRequestLine(b []byte) (*RequestLine, int, error) {
 
 	httpParts := bytes.Split(parts[2], []byte("/"))
 	// Check if the HTTP_PROTOCOL part is 'HTTP/1.1'
-	if len(parts) != 2 || string(httpParts[0]) != "HTTP" || string(httpParts[1]) != "1.1" {
+	if len(httpParts) != 2 || string(httpParts[0]) != "HTTP" || string(httpParts[1]) != "1.1" {
 		return nil, 0, ErrMalformedRequestLine
 	}
 
