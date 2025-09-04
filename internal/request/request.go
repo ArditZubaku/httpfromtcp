@@ -4,14 +4,17 @@ import (
 	"bytes"
 	"fmt"
 	"io"
+
+	"github.com/ArditZubaku/httpfromtcp/internal/headers"
 )
 
 type parserState string
 
 const (
-	StateInit  parserState = "init"
-	StateDone  parserState = "done"
-	StateError parserState = "error"
+	StateInit    parserState = "init"
+	StateHeaders parserState = "headers"
+	StateDone    parserState = "done"
+	StateError   parserState = "error"
 )
 
 type RequestLine struct {
@@ -22,6 +25,7 @@ type RequestLine struct {
 
 type Request struct {
 	RequestLine RequestLine
+	Headers     headers.Headers
 	state       parserState
 }
 
@@ -89,9 +93,13 @@ outer:
 
 			r.RequestLine = *rl
 			read += n
-			r.state = StateDone
+			r.state = StateHeaders
 		case StateDone:
 			break outer
+		case StateHeaders:
+			break outer
+		default:
+			panic("somehow we have programmed poorly")
 		}
 	}
 
