@@ -17,6 +17,7 @@ func isValidToken(str []byte) bool {
 			(ch >= 'a' && ch <= 'z') ||
 			(ch >= '0' && ch <= '9') {
 			found = true
+		} else {
 			switch ch {
 			case
 				'#',
@@ -35,10 +36,10 @@ func isValidToken(str []byte) bool {
 				'~':
 				found = true
 			}
+		}
 
-			if !found {
-				return false
-			}
+		if !found {
+			return false
 		}
 	}
 

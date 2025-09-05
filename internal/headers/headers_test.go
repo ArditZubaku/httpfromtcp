@@ -10,16 +10,17 @@ import (
 func TestHeaderParse(t *testing.T) {
 	// Test: Valid single header
 	headers := NewHeaders()
-	data := []byte("Host: localhost:42069\r\nFooFoo:    barbar\r\n")
+	data := []byte("Host: localhost:42069\r\nFooFoo:    barbar\r\n\r\n")
 	n, done, err := headers.Parse(data)
 	require.NoError(t, err)
 	require.NotNil(t, headers)
 	assert.Equal(t, "localhost:42069", headers.Get("HOST"))
 	assert.Equal(t, "barbar", headers.Get("FooFoo"))
 	assert.Equal(t, "", headers.Get("MissingKey"))
-	assert.Equal(t, 42, n)
+	assert.Equal(t, 44, n)
 	assert.True(t, done)
 
+	// Test: Invalid header with special character in name
 	headers = NewHeaders()
 	data = []byte("H©st: localhost:42069\r\n\r\n")
 	n, done, err = headers.Parse(data)
@@ -27,12 +28,12 @@ func TestHeaderParse(t *testing.T) {
 	assert.Equal(t, 0, n)
 	assert.False(t, done)
 
+	// Test: Multiple headers with same name (should be concatenated)
 	headers = NewHeaders()
-	data = []byte("Host: localhost:42069\r\nHost: localhost:42069\r\n")
+	data = []byte("Host: localhost:42069\r\nHost: localhost:42069\r\n\r\n")
 	_, done, err = headers.Parse(data)
-	require.Error(t, err)
 	require.NoError(t, err)
 	require.NotNil(t, headers)
 	assert.Equal(t, "localhost:42069,localhost:42069", headers.Get("HOST"))
-	assert.False(t, done)
+	assert.True(t, done)
 }
