@@ -38,7 +38,7 @@ func TestRequestLineParse(t *testing.T) {
 	require.NotNil(t, r)
 	assert.Equal(t, "GET", r.RequestLine.Method)
 	assert.Equal(t, "/", r.RequestLine.RequestTarget)
-	assert.Equal(t, "1.1", r.RequestLine.HttpVersion)
+	assert.Equal(t, "1.1", r.RequestLine.HTTPVersion)
 
 	// Test: Good GET Request line with path
 	reader = &chunkReader{
@@ -50,7 +50,7 @@ func TestRequestLineParse(t *testing.T) {
 	require.NotNil(t, r)
 	assert.Equal(t, "GET", r.RequestLine.Method)
 	assert.Equal(t, "/coffee", r.RequestLine.RequestTarget)
-	assert.Equal(t, "1.1", r.RequestLine.HttpVersion)
+	assert.Equal(t, "1.1", r.RequestLine.HTTPVersion)
 }
 
 func TestParseHeaders(t *testing.T) {
