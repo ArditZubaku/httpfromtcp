@@ -74,11 +74,11 @@ func NewHeaders() *Headers {
 	}
 }
 
-func (h Headers) Get(name string) string {
+func (h *Headers) Get(name string) string {
 	return h.headers[strings.ToLower(name)]
 }
 
-func (h Headers) Set(name, value string) {
+func (h *Headers) Set(name, value string) {
 	name = strings.ToLower(name)
 
 	if v, ok := h.headers[name]; ok {
@@ -88,7 +88,13 @@ func (h Headers) Set(name, value string) {
 	}
 }
 
-func (h Headers) Parse(data []byte) (int, bool, error) {
+func (h *Headers) ForEach(cb func(n, v string)) {
+	for n, v := range h.headers {
+		cb(n, v)
+	}
+}
+
+func (h *Headers) Parse(data []byte) (int, bool, error) {
 	read := 0
 	done := false
 	for {
