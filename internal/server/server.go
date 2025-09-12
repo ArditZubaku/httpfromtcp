@@ -4,17 +4,20 @@ package server
 import (
 	"fmt"
 	"net"
+
+	"github.com/ArditZubaku/httpfromtcp/internal/response"
 )
 
 type Server struct {
 	closed bool
 }
 
-func runConnection(s *Server, conn net.Conn) {
+func runConnection(_ *Server, conn net.Conn) {
 	defer conn.Close()
 
-	out := []byte("HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\nContent-Length: 13\r\n\r\nHello World!")
-	conn.Write(out)
+	headers := response.GetDefaultHeaders(0)
+	response.WriteStatusLine(conn, response.StatusOK)
+	response.WriteHeaders(conn, headers)
 }
 
 func runServer(s *Server, listener net.Listener) {
