@@ -1,3 +1,4 @@
+// Package request provides HTTP request parsing functionality for building HTTP from TCP.
 package request
 
 import (

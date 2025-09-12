@@ -1,3 +1,4 @@
+// Package headers provides functionality for parsing and managing HTTP headers.
 package headers
 
 import (
