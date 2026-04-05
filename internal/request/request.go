@@ -107,6 +107,7 @@ func (r *Request) hasBody() bool {
 	return length > 0
 }
 
+// parse implements a finite state machine that incrementally processes HTTP requests from TCP data.
 func (r *Request) parse(data []byte) (int, error) {
 	read := 0
 outer:
@@ -117,67 +118,57 @@ outer:
 		}
 		switch r.state {
 		case StateError:
-			{
-				return 0, ErrRequestInErrorState
-			}
+			return 0, ErrRequestInErrorState
 		case StateInit:
-			{
-				rl, n, err := parseRequestLine(currentData)
-				if err != nil {
-					r.state = StateError
-					return 0, err
-				}
-
-				if n == 0 {
-					break outer
-				}
-
-				r.RequestLine = *rl
-				read += n
-				r.state = StateHeaders
+			rl, n, err := parseRequestLine(currentData)
+			if err != nil {
+				r.state = StateError
+				return 0, err
 			}
-		case StateDone:
-			{
+
+			if n == 0 {
 				break outer
 			}
+
+			r.RequestLine = *rl
+			read += n
+			r.state = StateHeaders
+		case StateDone:
+			break outer
 		case StateHeaders:
-			{
-				n, done, err := r.Headers.Parse(currentData)
+			n, done, err := r.Headers.Parse(currentData)
 
-				if err != nil {
-					r.state = StateError
-					return 0, err
-				}
+			if err != nil {
+				r.state = StateError
+				return 0, err
+			}
 
-				if n == 0 {
-					break outer
-				}
+			if n == 0 {
+				break outer
+			}
 
-				read += n
+			read += n
 
-				if done {
-					if r.hasBody() {
-						r.state = StateBody
-					} else {
-						r.state = StateDone
-					}
+			if done {
+				if r.hasBody() {
+					r.state = StateBody
+				} else {
+					r.state = StateDone
 				}
 			}
 		case StateBody:
-			{
-				length := getIntHeader(r.Headers, "content-length", 0)
-				if length == 0 {
-					panic("chunked encoding not supported yet")
-				}
+			length := getIntHeader(r.Headers, "content-length", 0)
+			if length == 0 {
+				panic("chunked encoding not supported yet")
+			}
 
-				// We now need to parse the body
-				remaining := min(length-len(r.Body), len(currentData))
-				r.Body += string(currentData[:remaining])
-				read += remaining
+			// We now need to parse the body
+			remaining := min(length-len(r.Body), len(currentData))
+			r.Body += string(currentData[:remaining])
+			read += remaining
 
-				if len(r.Body) == length {
-					r.state = StateDone
-				}
+			if len(r.Body) == length {
+				r.state = StateDone
 			}
 		default:
 			panic("somehow we have programmed poorly")
