@@ -26,6 +26,10 @@ type RequestLine struct {
 	Method        string
 }
 
+func (r *RequestLine) isValidHTTP() bool {
+	return r.HTTPVersion == "1.1"
+}
+
 type Request struct {
 	RequestLine RequestLine
 	Headers     *headers.Headers
@@ -79,8 +83,8 @@ func parseRequestLine(b []byte) (*RequestLine, int, error) {
 	}
 
 	httpParts := bytes.Split(parts[2], []byte("/"))
-	// Check if the HTTP_PROTOCOL part is 'HTTP/1.1'
-	if len(httpParts) != 2 || string(httpParts[0]) != "HTTP" || string(httpParts[1]) != "1.1" {
+	// Check if the HTTP_PROTOCOL part is correct
+	if len(httpParts) != 2 || string(httpParts[0]) != "HTTP" {
 		return nil, 0, ErrMalformedRequestLine
 	}
 
@@ -88,6 +92,10 @@ func parseRequestLine(b []byte) (*RequestLine, int, error) {
 		Method:        string(parts[0]),
 		RequestTarget: string(parts[1]),
 		HTTPVersion:   string(httpParts[1]),
+	}
+
+	if !rl.isValidHTTP() {
+		return nil, 0, ErrUnsupportedHTTPVersion
 	}
 
 	return rl, read, nil
