@@ -7,7 +7,7 @@ import (
 	"strings"
 )
 
-func isValidToken(str []byte) bool {
+func isValidToken(str string) bool {
 	// Lowercase letters: a-z
 	// Uppercase letters: A-Z
 	// Digits: 0-9
@@ -122,7 +122,7 @@ func (h *Headers) Parse(data []byte) (int, bool, error) {
 			return 0, false, err
 		}
 
-		if !isValidToken([]byte(name)) {
+		if !isValidToken(name) {
 			return 0, false, fmt.Errorf("malformed header name")
 		}
 
