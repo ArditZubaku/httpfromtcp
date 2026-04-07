@@ -82,25 +82,26 @@ func main() {
 
 					w.WriteHeaders(h)
 
-					var fullBody []byte
+					hasher := sha256.New()
+					data := make([]byte, 32)
+					totalLen := 0
 					for {
-						data := make([]byte, 32)
 						n, err := res.Body.Read(data)
 						if err != nil {
 							break
 						}
 
-						fullBody = append(fullBody, data[:n]...)
+						hasher.Write(data[:n])
+						totalLen += n
 						w.WriteBody(fmt.Appendf(nil, "%x\r\n", n))
 						w.WriteBody(data[:n])
 						w.WriteBody([]byte("\r\n"))
 					}
 					w.WriteBody([]byte("0\r\n"))
 
-					out := sha256.Sum256(fullBody)
 					trailer := headers.NewHeaders()
-					trailer.Set("X-Content-SHA256", hex.EncodeToString(out[:]))
-					trailer.Set("X-Content-Length", fmt.Sprintf("%d", len(fullBody)))
+					trailer.Set("X-Content-SHA256", hex.EncodeToString(hasher.Sum(nil)))
+					trailer.Set("X-Content-Length", fmt.Sprintf("%d", totalLen))
 
 					w.WriteHeaders(trailer)
 
