@@ -8,10 +8,11 @@ import (
 )
 
 const (
-	ContentLength = "Content-Length"
-	ContentType   = "Content-Type"
-	Connection    = "Connection"
+	ContentLength    = "Content-Length"
+	ContentType      = "Content-Type"
+	Connection       = "Connection"
 	TransferEncoding = "Transfer-Encoding"
+	Trailer          = "Trailer"
 )
 
 func isValidToken(str string) bool {

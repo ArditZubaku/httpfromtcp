@@ -1,6 +1,8 @@
 package main
 
 import (
+	"crypto/sha256"
+	"encoding/hex"
 	"fmt"
 	"log"
 	"net/http"
@@ -32,7 +34,7 @@ func main() {
 			} else if route == "/myproblem" {
 				body = respondWith500()
 				statusCode = response.StatusInternalServerError
-			} else if strings.HasPrefix(route, "/httpbin/stream") {
+			} else if strings.HasPrefix(route, "/httpbin") {
 				res, err := http.Get("https://httpbin.org/" + route[len("/httpbin/"):])
 				if err != nil {
 					body = respondWith500()
@@ -43,9 +45,12 @@ func main() {
 					h.Delete(headers.ContentLength)
 					h.Set(headers.TransferEncoding, "chunked")
 					h.Replace(headers.ContentType, "text/plain")
+					h.Set(headers.Trailer, "X-Content-SHA256")
+					h.Set(headers.Trailer, "X-Content-Length")
 
 					w.WriteHeaders(h)
 
+					var fullBody []byte
 					for {
 						data := make([]byte, 32)
 						n, err := res.Body.Read(data)
@@ -53,12 +58,20 @@ func main() {
 							break
 						}
 
+						fullBody = append(fullBody, data[:n]...)
 						w.WriteBody(fmt.Appendf(nil, "%x\r\n", n))
 						w.WriteBody(data[:n])
 						w.WriteBody([]byte("\r\n"))
 					}
 					w.WriteBody([]byte("0\r\n"))
-					w.WriteBody([]byte("\r\n"))
+
+					out := sha256.Sum256(fullBody)
+					trailer := headers.NewHeaders()
+					trailer.Set("X-Content-SHA256", hex.EncodeToString(out[:]))
+					trailer.Set("X-Content-Length", fmt.Sprintf("%d", len(fullBody)))
+
+					w.WriteHeaders(trailer)
+
 					return
 				}
 			}
