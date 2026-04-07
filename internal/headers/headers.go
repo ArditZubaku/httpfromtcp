@@ -7,6 +7,12 @@ import (
 	"strings"
 )
 
+const (
+	ContentLength = "Content-length"
+	ContentType   = "Content-Type"
+	Connection    = "Connection"
+)
+
 func isValidToken(str string) bool {
 	// Lowercase letters: a-z
 	// Uppercase letters: A-Z

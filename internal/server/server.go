@@ -2,22 +2,14 @@
 package server
 
 import (
-	"bytes"
 	"fmt"
-	"io"
 	"net"
 
-	"github.com/ArditZubaku/httpfromtcp/internal/headers"
 	"github.com/ArditZubaku/httpfromtcp/internal/request"
 	"github.com/ArditZubaku/httpfromtcp/internal/response"
 )
 
-type HandlerError struct {
-	StatusCode response.StatusCode
-	Message    string
-}
-
-type Handler func(w io.Writer, req *request.Request) *HandlerError
+type Handler func(w *response.Writer, req *request.Request)
 
 type Server struct {
 	closed  bool
@@ -27,41 +19,16 @@ type Server struct {
 func (s *Server) handleConnection(conn net.Conn) {
 	defer conn.Close()
 
-	headers := response.GetDefaultHeaders(0)
+	rp := response.NewWriter(conn)
 
 	r, err := request.RequestFromReader(conn)
 	if err != nil {
-		s.writeResponseHead(conn, response.StatusBadRequest, headers)
+		rp.WriteStatusLine(response.StatusBadRequest)
+		rp.WriteHeaders(response.GetDefaultHeaders(0))
 		return
 	}
 
-	// TODO: Maybe give it a buffer of some size?
-	writer := bytes.NewBuffer([]byte{})
-	handlerErr := s.handler(writer, r)
-
-	var body []byte
-	var statusCode response.StatusCode
-
-	if handlerErr != nil {
-		statusCode = handlerErr.StatusCode
-		body = []byte(handlerErr.Message)
-	} else {
-		statusCode = response.StatusOK
-		body = writer.Bytes()
-	}
-
-	headers.Replace("Content-Length", fmt.Sprintf("%d", len(body)))
-	s.writeResponseHead(conn, statusCode, headers)
-	conn.Write(body)
-}
-
-func (s *Server) writeResponseHead(
-	conn net.Conn,
-	statusCode response.StatusCode,
-	headers *headers.Headers,
-) {
-	response.WriteStatusLine(conn, statusCode)
-	response.WriteHeaders(conn, headers)
+	s.handler(rp, r)
 }
 
 func (s *Server) listen(listener net.Listener) {

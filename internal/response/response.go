@@ -16,13 +16,16 @@ const (
 	StatusInternalServerError StatusCode = 500
 )
 
-type Response struct {
-	Status  StatusCode
-	Headers map[string]string
-	Body    []byte
+type Writer struct {
+	// TODO: I could maybe embed this instead...
+	writer io.Writer
 }
 
-func WriteStatusLine(w io.Writer, statusCode StatusCode) error {
+func NewWriter(writer io.Writer) *Writer {
+	return &Writer{writer}
+}
+
+func (w *Writer) WriteStatusLine(statusCode StatusCode) error {
 	var statusLine []byte
 
 	switch statusCode {
@@ -38,20 +41,20 @@ func WriteStatusLine(w io.Writer, statusCode StatusCode) error {
 		return fmt.Errorf("unknown status code: %d", statusCode)
 	}
 
-	_, err := w.Write(statusLine)
+	_, err := w.writer.Write(statusLine)
 	return err
 }
 
 func GetDefaultHeaders(contentLen int) *headers.Headers {
 	h := headers.NewHeaders()
-	h.Set("Content-Type", "text/plain")
-	h.Set("Content-Length", fmt.Sprintf("%d", contentLen))
-	h.Set("Connection", "close")
+	h.Set(headers.ContentType, "text/plain")
+	h.Set(headers.ContentLength, fmt.Sprintf("%d", contentLen))
+	h.Set(headers.Connection, "close")
 
 	return h
 }
 
-func WriteHeaders(w io.Writer, headers *headers.Headers) error {
+func (w *Writer) WriteHeaders(headers *headers.Headers) error {
 	var b []byte
 
 	headers.ForEach(func(n, v string) {
@@ -59,6 +62,12 @@ func WriteHeaders(w io.Writer, headers *headers.Headers) error {
 	})
 	b = fmt.Append(b, "\r\n")
 
-	_, err := w.Write(b)
+	_, err := w.writer.Write(b)
 	return err
+}
+
+func (w *Writer) WriteBody(p []byte) (int, error) {
+	n, err := w.writer.Write(p)
+
+	return n, err
 }
