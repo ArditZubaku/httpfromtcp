@@ -8,6 +8,7 @@ import (
 	"syscall"
 
 	"github.com/ArditZubaku/httpfromtcp/internal/request"
+	"github.com/ArditZubaku/httpfromtcp/internal/response"
 	"github.com/ArditZubaku/httpfromtcp/internal/server"
 )
 
@@ -17,8 +18,19 @@ func main() {
 	s, err := server.Serve(
 		port,
 		func(w io.Writer, req *request.Request) *server.HandlerError {
-			if req.RequestLine.RequestTarget == "/yourproblem" {
-				
+			switch req.RequestLine.RequestTarget {
+			case "/yourproblem":
+				return &server.HandlerError{
+					StatusCode: response.StatusBadRequest,
+					Message:    "Your problem is not my problem\n",
+				}
+			case "/myproblem":
+				return &server.HandlerError{
+					StatusCode: response.StatusInternalServerError,
+					Message:    "My bad\n",
+				}
+			default:
+				w.Write([]byte("All good\n"))
 			}
 			return nil
 		},
