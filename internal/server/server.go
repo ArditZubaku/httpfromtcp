@@ -32,6 +32,7 @@ func (s *Server) handleConnection(conn net.Conn) {
 	}
 
 	s.handler(rp, r)
+	rp.Flush()
 }
 
 func (s *Server) listen(listener net.Listener) {

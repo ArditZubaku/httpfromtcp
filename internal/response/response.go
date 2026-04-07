@@ -1,6 +1,7 @@
 package response
 
 import (
+	"bufio"
 	"fmt"
 	"io"
 
@@ -17,12 +18,15 @@ const (
 )
 
 type Writer struct {
-	// TODO: I could maybe embed this instead...
-	writer io.Writer
+	writer *bufio.Writer
 }
 
 func NewWriter(writer io.Writer) *Writer {
-	return &Writer{writer}
+	return &Writer{writer: bufio.NewWriter(writer)}
+}
+
+func (w *Writer) Flush() error {
+	return w.writer.Flush()
 }
 
 func (w *Writer) WriteStatusLine(statusCode StatusCode) error {
