@@ -52,17 +52,13 @@ func GetDefaultHeaders(contentLen int) *headers.Headers {
 }
 
 func WriteHeaders(w io.Writer, headers *headers.Headers) error {
-	var err error
-	headers.ForEach(func(n, v string) {
-		if err != nil {
-			return
-		}
-		_, err = fmt.Fprintf(w, "%s: %s\r\n", n, v)
-	})
-	if err != nil {
-		return err
-	}
+	var b []byte
 
-	_, err = w.Write([]byte("\r\n"))
+	headers.ForEach(func(n, v string) {
+		b = fmt.Appendf(b, "%s: %s\r\n", n, v)
+	})
+	b = fmt.Append(b, "\r\n")
+
+	_, err := w.Write(b)
 	return err
 }
