@@ -4,6 +4,7 @@ package server
 import (
 	"fmt"
 	"net"
+	"sync/atomic"
 
 	"github.com/ArditZubaku/httpfromtcp/internal/request"
 	"github.com/ArditZubaku/httpfromtcp/internal/response"
@@ -14,7 +15,7 @@ const maxConcurrentConnections = 100
 type Handler func(w *response.Writer, req *request.Request)
 
 type Server struct {
-	closed  bool
+	closed  atomic.Bool
 	handler Handler
 	sem     chan struct{}
 }
@@ -38,7 +39,7 @@ func (s *Server) handleConnection(conn net.Conn) {
 func (s *Server) listen(listener net.Listener) {
 	defer listener.Close()
 	for {
-		if s.closed {
+		if s.closed.Load() {
 			return
 		}
 
@@ -56,7 +57,7 @@ func (s *Server) listen(listener net.Listener) {
 }
 
 func (s *Server) Close() error {
-	s.closed = true
+	s.closed.Store(true)
 	return nil
 }
 
@@ -67,7 +68,6 @@ func Serve(port uint16, handler Handler) (*Server, error) {
 	}
 
 	s := &Server{
-		closed:  false,
 		handler: handler,
 		sem:     make(chan struct{}, maxConcurrentConnections),
 	}
