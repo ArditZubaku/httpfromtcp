@@ -8,9 +8,10 @@ import (
 )
 
 const (
-	ContentLength = "Content-length"
+	ContentLength = "Content-Length"
 	ContentType   = "Content-Type"
 	Connection    = "Connection"
+	TransferEncoding = "Transfer-Encoding"
 )
 
 func isValidToken(str string) bool {
@@ -89,6 +90,11 @@ func (h *Headers) Get(name string) (string, bool) {
 func (h *Headers) Replace(name, value string) {
 	name = strings.ToLower(name)
 	h.headers[name] = value
+}
+
+func (h *Headers) Delete(name string) {
+	name = strings.ToLower(name)
+	delete(h.headers, name)
 }
 
 func (h *Headers) Set(name, value string) {

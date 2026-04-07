@@ -3,8 +3,10 @@ package main
 import (
 	"fmt"
 	"log"
+	"net/http"
 	"os"
 	"os/signal"
+	"strings"
 	"syscall"
 
 	"github.com/ArditZubaku/httpfromtcp/internal/headers"
@@ -23,17 +25,47 @@ func main() {
 			body := respondWith200()
 			statusCode := response.StatusOK
 
-			switch req.RequestLine.RequestTarget {
-			case "/yourproblem":
+			route := req.RequestLine.RequestTarget
+			if route == "/yourproblem" {
 				body = respondWith400()
 				statusCode = response.StatusBadRequest
-			case "/myproblem":
+			} else if route == "/myproblem" {
 				body = respondWith500()
 				statusCode = response.StatusInternalServerError
+			} else if strings.HasPrefix(route, "/httpbin/stream") {
+				res, err := http.Get("https://httpbin.org/" + route[len("/httpbin/"):])
+				if err != nil {
+					body = respondWith500()
+					statusCode = response.StatusInternalServerError
+				} else {
+					w.WriteStatusLine(response.StatusOK)
+
+					h.Delete(headers.ContentLength)
+					h.Set(headers.TransferEncoding, "chunked")
+					h.Replace(headers.ContentType, "text/plain")
+
+					w.WriteHeaders(h)
+
+					for {
+						data := make([]byte, 32)
+						n, err := res.Body.Read(data)
+						if err != nil {
+							break
+						}
+
+						w.WriteBody(fmt.Appendf(nil, "%x\r\n", n))
+						w.WriteBody(data[:n])
+						w.WriteBody([]byte("\r\n"))
+					}
+					w.WriteBody([]byte("0\r\n"))
+					w.WriteBody([]byte("\r\n"))
+					return
+				}
 			}
 
 			h.Replace(headers.ContentLength, fmt.Sprintf("%d", len(body)))
 			h.Replace(headers.ContentType, "text/html")
+
 			w.WriteStatusLine(statusCode)
 			w.WriteHeaders(h)
 			w.WriteBody(body)
