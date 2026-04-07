@@ -35,6 +35,7 @@ type Request struct {
 	Headers     *headers.Headers
 	Body        string
 	state       parserState
+	bodyBuf     []byte
 }
 
 func getIntHeader(headers *headers.Headers, name string, defaultVal int) int {
@@ -163,11 +164,12 @@ outer:
 			}
 
 			// We now need to parse the body
-			remaining := min(length-len(r.Body), len(currentData))
-			r.Body += string(currentData[:remaining])
+			remaining := min(length-len(r.bodyBuf), len(currentData))
+			r.bodyBuf = append(r.bodyBuf, currentData[:remaining]...)
 			read += remaining
 
-			if len(r.Body) == length {
+			if len(r.bodyBuf) == length {
+				r.Body = string(r.bodyBuf)
 				r.state = StateDone
 			}
 		default:
