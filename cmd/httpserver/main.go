@@ -34,6 +34,20 @@ func main() {
 			} else if route == "/myproblem" {
 				body = respondWith500()
 				statusCode = response.StatusInternalServerError
+			} else if route == "/video" {
+				// NOTE: In order for this to work you should have a video in this path `assets/video.mp4`
+				f, err := os.ReadFile("assets/video.mp4")
+				if err != nil {
+					body = respondWith500()
+					statusCode = response.StatusInternalServerError
+				} else {
+					h.Replace(headers.ContentType, "video/mp4")
+					h.Replace(headers.ContentLength, fmt.Sprintf("%d", len(f)))
+
+					w.WriteStatusLine(response.StatusOK)
+					w.WriteHeaders(h)
+					w.WriteBody(f)
+				}
 			} else if strings.HasPrefix(route, "/httpbin") {
 				res, err := http.Get("https://httpbin.org/" + route[len("/httpbin/"):])
 				if err != nil {
