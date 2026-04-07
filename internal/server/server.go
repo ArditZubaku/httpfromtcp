@@ -9,11 +9,14 @@ import (
 	"github.com/ArditZubaku/httpfromtcp/internal/response"
 )
 
+const maxConcurrentConnections = 100
+
 type Handler func(w *response.Writer, req *request.Request)
 
 type Server struct {
 	closed  bool
 	handler Handler
+	sem     chan struct{}
 }
 
 func (s *Server) handleConnection(conn net.Conn) {
@@ -43,7 +46,11 @@ func (s *Server) listen(listener net.Listener) {
 			return
 		}
 
-		go s.handleConnection(conn)
+		s.sem <- struct{}{}
+		go func() {
+			defer func() { <-s.sem }()
+			s.handleConnection(conn)
+		}()
 	}
 }
 
@@ -61,6 +68,7 @@ func Serve(port uint16, handler Handler) (*Server, error) {
 	s := &Server{
 		closed:  false,
 		handler: handler,
+		sem:     make(chan struct{}, maxConcurrentConnections),
 	}
 
 	go s.listen(listener)
