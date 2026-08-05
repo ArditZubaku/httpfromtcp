@@ -22,7 +22,7 @@ const port = 42069
 func main() {
 	s, err := server.Serve(
 		port,
-		func(w *response.Writer, req *request.Request) {
+		func(w *response.Writer, req *request.Request) error {
 			h := response.GetDefaultHeaders(0)
 			body := respondWith200()
 			statusCode := response.StatusOK
@@ -63,7 +63,7 @@ func main() {
 								break
 							}
 						}
-						return
+						return w.Err()
 					}
 				}
 			} else if strings.HasPrefix(route, "/httpbin") {
@@ -105,7 +105,7 @@ func main() {
 
 					w.WriteHeaders(trailer)
 
-					return
+					return w.Err()
 				}
 			}
 
@@ -115,6 +115,7 @@ func main() {
 			w.WriteStatusLine(statusCode)
 			w.WriteHeaders(h)
 			w.WriteBody(body)
+			return w.Err()
 		},
 	)
 	if err != nil {

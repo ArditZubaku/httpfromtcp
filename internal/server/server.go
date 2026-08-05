@@ -3,6 +3,7 @@ package server
 
 import (
 	"fmt"
+	"log"
 	"net"
 	"sync/atomic"
 
@@ -12,7 +13,7 @@ import (
 
 const maxConcurrentConnections = 100
 
-type Handler func(w *response.Writer, req *request.Request)
+type Handler func(w *response.Writer, req *request.Request) error
 
 type Server struct {
 	closed  atomic.Bool
@@ -29,11 +30,19 @@ func (s *Server) handleConnection(conn net.Conn) {
 	if err != nil {
 		rp.WriteStatusLine(response.StatusBadRequest)
 		rp.WriteHeaders(response.GetDefaultHeaders(0))
+		rp.Flush()
+		if rp.Err() != nil {
+			log.Printf("error writing bad request response: %v", rp.Err())
+		}
 		return
 	}
 
-	s.handler(rp, r)
-	rp.Flush()
+	if err := s.handler(rp, r); err != nil {
+		log.Printf("handler error: %v", err)
+	}
+	if err := rp.Flush(); err != nil {
+		log.Printf("flush error: %v", err)
+	}
 }
 
 func (s *Server) listen(listener net.Listener) {

@@ -19,17 +19,34 @@ const (
 
 type Writer struct {
 	writer *bufio.Writer
+	err    error
 }
 
 func NewWriter(writer io.Writer) *Writer {
 	return &Writer{writer: bufio.NewWriter(writer)}
 }
 
+func (w *Writer) Err() error { return w.err }
+
+func (w *Writer) setErr(err error) {
+	if err != nil && w.err == nil {
+		w.err = err
+	}
+}
+
 func (w *Writer) Flush() error {
-	return w.writer.Flush()
+	if w.err != nil {
+		return w.err
+	}
+	err := w.writer.Flush()
+	w.setErr(err)
+	return err
 }
 
 func (w *Writer) WriteStatusLine(statusCode StatusCode) error {
+	if w.err != nil {
+		return w.err
+	}
 	var statusLine []byte
 
 	switch statusCode {
@@ -46,6 +63,7 @@ func (w *Writer) WriteStatusLine(statusCode StatusCode) error {
 	}
 
 	_, err := w.writer.Write(statusLine)
+	w.setErr(err)
 	return err
 }
 
@@ -59,6 +77,9 @@ func GetDefaultHeaders(contentLen int) *headers.Headers {
 }
 
 func (w *Writer) WriteHeaders(headers *headers.Headers) error {
+	if w.err != nil {
+		return w.err
+	}
 	var b []byte
 
 	headers.ForEach(func(n, v string) {
@@ -67,11 +88,15 @@ func (w *Writer) WriteHeaders(headers *headers.Headers) error {
 	b = fmt.Append(b, "\r\n")
 
 	_, err := w.writer.Write(b)
+	w.setErr(err)
 	return err
 }
 
 func (w *Writer) WriteBody(p []byte) (int, error) {
+	if w.err != nil {
+		return 0, w.err
+	}
 	n, err := w.writer.Write(p)
-
+	w.setErr(err)
 	return n, err
 }
